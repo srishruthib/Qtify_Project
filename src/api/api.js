@@ -8,6 +8,8 @@ export const fetchTopAlbums = async () => {
     return response.data;
   } catch (e) {
     console.error(e);
+    // Return an empty array to prevent breaking the app on error
+    return [];
   }
 };
 
@@ -17,15 +19,32 @@ export const fetchNewAlbums = async () => {
     return response.data;
   } catch (e) {
     console.error(e);
+    return [];
   }
 };
 
+// --- THIS IS THE CORRECTED CODE FOR FETCHSONGS ---
 export const fetchSongs = async () => {
   try {
     const response = await axios.get(`${BACKEND_ENDPOINT}/songs`);
-    return response.data;
+    
+    // Map over the songs and ensure the URL uses HTTPS
+    const correctedSongs = response.data.map(song => {
+      // Check if the URL is an HTTP link and convert it to HTTPS
+      if (song.url && song.url.startsWith("http://")) {
+        return {
+          ...song,
+          url: song.url.replace("http://", "https://"),
+        };
+      }
+      return song;
+    });
+
+    return correctedSongs; // Return the corrected song data
   } catch (e) {
     console.error(e);
+    // Return an empty array on error to prevent breaking the app
+    return [];
   }
 };
 
@@ -35,5 +54,6 @@ export const fetchFilters = async () => {
     return response.data;
   } catch (e) {
     console.error(e);
+    return { data: [] };
   }
 };
