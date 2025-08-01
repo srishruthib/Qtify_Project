@@ -13,47 +13,43 @@ import {
 
 function App() {
   const [data, setData] = useState({});
+  const [loading, setLoading] = useState(true); // NEW: Add a loading state
 
-  // const r = {
-  //   topAlbums: [{}, {}, {}, {}],
-  //    newAlbums: [{}, {}, {}, {}],
-  //    genres: ['rock', 'pop', 'jazz'],
-  //    songs: []
-  // };
-
-  const generateData = (key, source) => {
-    source().then((data) => {
-      setData((prevState) => {
-        // Object.assign would also work
-        return { ...prevState, [key]: data };
-      });
-    });
+  const generateData = async (key, source) => {
+    try {
+      const fetchedData = await source();
+      setData((prevState) => ({ ...prevState, [key]: fetchedData }));
+    } catch (error) {
+      console.error(`Error fetching ${key}:`, error);
+    }
   };
 
   useEffect(() => {
-    generateData("topAlbums", fetchTopAlbums);
-    generateData("newAlbums", fetchNewAlbums);
-    generateData("songs", fetchSongs);
-    generateData("genres", fetchFilters);
+    // NEW: Use Promise.all to ensure all data is fetched before we proceed
+    Promise.all([
+      generateData("topAlbums", fetchTopAlbums),
+      generateData("newAlbums", fetchNewAlbums),
+      generateData("songs", fetchSongs),
+      generateData("genres", fetchFilters),
+    ]).then(() => {
+      setLoading(false); // NEW: Set loading to false once all promises are resolved
+    });
   }, []);
 
   const { topAlbums = [], newAlbums = [], songs = [], genres = [] } = data;
 
+  if (loading) {
+    // NEW: Show a loading message while we are waiting for data
+    return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px', fontFamily: 'Inter, sans-serif' }}>Loading...</div>;
+  }
+
   return (
-    <>
-      <StyledEngineProvider injectFirst>
-        <Navbar searchData={[...topAlbums, ...newAlbums]} />
-        <Outlet context={{ data: { topAlbums, newAlbums, songs, genres } }} />
-      </StyledEngineProvider>
-    </>
+    <StyledEngineProvider injectFirst>
+      <Navbar searchData={[...topAlbums, ...newAlbums]} />
+      {/* The Outlet will now receive full data because we wait for the loading state to be false */}
+      <Outlet context={{ data: { topAlbums, newAlbums, songs, genres } }} />
+    </StyledEngineProvider>
   );
 }
-
-// {data: {
-//   topAlbums: [],
-//   newAlbums: [],
-//   genres: [],
-//   songs: []
-// }}
 
 export default App;
